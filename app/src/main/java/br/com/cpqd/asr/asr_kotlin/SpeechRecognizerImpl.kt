@@ -80,9 +80,15 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                         System.out.format("%s: %s\n", name, value)
                     }
                 }
+
+
+                result.withLock {
+                    conditionResult.signal()
+                }
+
             } catch (e: WebSocketException) {
                 Log.d(TAG, e.printStackTrace().toString())
-            } finally {
+
                 result.withLock {
                     conditionResult.signal()
                 }
