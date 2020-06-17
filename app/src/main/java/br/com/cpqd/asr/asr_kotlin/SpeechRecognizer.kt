@@ -74,7 +74,7 @@ class SpeechRecognizer {
             return SpeechRecognizerImpl(this)
         }
 
-        fun audioSource(audio: FileAudioSource, type: String): Builder {
+        fun audioSource(audio: FileAudioSource?, type: String): Builder {
             this.audio = audio
             this.audioType = type
             return this

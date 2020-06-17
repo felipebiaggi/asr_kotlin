@@ -9,17 +9,21 @@ import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_SEND_AUDIO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_START_RECOGNITION
 import br.com.cpqd.asr.asr_kotlin.model.AsrMessage
+import br.com.cpqd.asr.asr_kotlin.model.RecognitionResult
+import br.com.cpqd.asr.asr_kotlin.model.UserAgent
 import br.com.cpqd.asr.asr_kotlin.util.Util
+import com.google.gson.Gson
 import com.neovisionaries.ws.client.*
 import java.io.IOException
 import java.lang.IllegalArgumentException
 import java.lang.RuntimeException
+import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
-    WebSocketListener {
+    WebSocketListenerAsr, SpeechRecognizerInterface {
 
 
     private val TAG: String = SpeechRecognizerImpl::class.java.simpleName
@@ -28,11 +32,17 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
     private var isSending: Boolean = false
 
-    private val bufferPacket = ReentrantLock()
+    private val bufferPacket: ReentrantLock = ReentrantLock()
 
-    private val condition = bufferPacket.newCondition()
+    private val conditionBufferPacket: Condition = bufferPacket.newCondition()
+
+    private val result: ReentrantLock = ReentrantLock()
+
+    private val conditionResult: Condition = result.newCondition()
 
     private val wss: WebSocket
+
+    private var recognitionResult: RecognitionResult? = null
 
     init {
 
@@ -72,6 +82,10 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                 }
             } catch (e: WebSocketException) {
                 Log.d(TAG, e.printStackTrace().toString())
+            } finally {
+                result.withLock {
+                    conditionResult.signal()
+                }
             }
         }
     }
@@ -91,7 +105,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         headers: MutableMap<String, MutableList<String>>?
     ) {
         recognizer(builder.audio, builder.audioType)
-        websocket?.sendBinary(AsrMessage(METHOD_CREATE_SESSION).toByteArray())
+        websocket?.sendBinary(AsrMessage(METHOD_CREATE_SESSION, UserAgent.toMap()).toByteArray())
 
     }
 
@@ -106,7 +120,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
             if (!isSending) {
                 isSending = true
-                thread(start = true, name = "SendAudioThread") {
+                thread(start = true, name = "SendAudioThread", isDaemon = true) {
                     var isLastPacket = false
                     while (!isLastPacket) {
                         bufferPacket.withLock {
@@ -118,7 +132,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
                                 websocket?.sendBinary(message.toByteArray())
 
-                                condition.signal()
+                                conditionBufferPacket.signal()
                             }
                         }
                     }
@@ -127,123 +141,32 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         }
 
         if (responseMessage.mMethod == "RECOGNITION_RESULT") {
-            responseMessage.mBody?.toString(NETWORK_CHARSET)?.let { Log.d(TAG, it) }
+            result.withLock {
+                responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
+                    recognitionResult = Gson().fromJson(it, RecognitionResult::class.java)
+                }
+                conditionResult.signal()
+            }
             websocket?.disconnect()
         }
 
     }
 
-    override fun handleCallbackError(websocket: WebSocket?, cause: Throwable?) {
-        cause?.let {
-            Log.d(TAG, it.printStackTrace().toString())
+
+    override fun waitRecognitionResult(): RecognitionResult? {
+        result.withLock {
+            conditionResult.await()
+            return recognitionResult
         }
-    }
-
-
-    override fun onFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onThreadCreated(websocket: WebSocket?, threadType: ThreadType?, thread: Thread?) {
-    }
-
-    override fun onThreadStarted(websocket: WebSocket?, threadType: ThreadType?, thread: Thread?) {
-    }
-
-    override fun onStateChanged(websocket: WebSocket?, newState: WebSocketState?) {
-    }
-
-    override fun onTextMessageError(
-        websocket: WebSocket?,
-        cause: WebSocketException?,
-        data: ByteArray?
-    ) {
-    }
-
-    override fun onTextFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onUnexpectedError(websocket: WebSocket?, cause: WebSocketException?) {
-    }
-
-    override fun onConnectError(websocket: WebSocket?, cause: WebSocketException?) {}
-
-    override fun onSendError(
-        websocket: WebSocket?,
-        cause: WebSocketException?,
-        frame: WebSocketFrame?
-    ) {
-    }
-
-    override fun onFrameUnsent(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onDisconnected(
-        websocket: WebSocket?,
-        serverCloseFrame: WebSocketFrame?,
-        clientCloseFrame: WebSocketFrame?,
-        closedByServer: Boolean
-    ) {
-    }
-
-    override fun onSendingFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onBinaryFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onPingFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onTextMessage(websocket: WebSocket?, text: String?) {
-    }
-
-    override fun onTextMessage(websocket: WebSocket?, data: ByteArray?) {
-    }
-
-    override fun onFrameError(
-        websocket: WebSocket?,
-        cause: WebSocketException?,
-        frame: WebSocketFrame?
-    ) {
-    }
-
-    override fun onCloseFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onContinuationFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onFrameSent(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onThreadStopping(websocket: WebSocket?, threadType: ThreadType?, thread: Thread?) {
-    }
-
-    override fun onError(websocket: WebSocket?, cause: WebSocketException?) {
-    }
-
-    override fun onMessageDecompressionError(
-        websocket: WebSocket?,
-        cause: WebSocketException?,
-        compressed: ByteArray?
-    ) {
-    }
-
-    override fun onPongFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-    }
-
-    override fun onMessageError(
-        websocket: WebSocket?,
-        cause: WebSocketException?,
-        frames: MutableList<WebSocketFrame>?
-    ) {
     }
 
     private fun recognizer(audio: FileAudioSource?, contentType: String?) {
 
-        if (contentType.isNullOrBlank() || !(contentType.contentEquals(TYPE_OCTET_STREAM) || contentType.contentEquals(
-                TYPE_AUDIO_RAW
-            ))
+        if (contentType.isNullOrBlank() || !(
+                    contentType.contentEquals(TYPE_OCTET_STREAM)
+                            || contentType.contentEquals(
+                        TYPE_AUDIO_RAW
+                    ))
         ) {
             throw IllegalArgumentException()
         }
@@ -252,7 +175,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             throw IllegalArgumentException()
         }
 
-        thread(start = true, name = "AudioBufferThread") {
+        thread(start = true, name = "AudioBufferThread", isDaemon = true) {
             val buffer = Util.createBufferSizer(
                 builder.chunkLength,
                 builder.audioSampleRate,
@@ -296,7 +219,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
                     bufferPacket.withLock {
                         query.add(message)
-                        condition.await()
+                        conditionBufferPacket.await()
                     }
 
                 }

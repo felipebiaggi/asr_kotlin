@@ -7,18 +7,125 @@
     tools:context=".MainActivity">
 
 
-    <TextView
-        android:id="@+id/resposta"
+    <androidx.core.widget.ContentLoadingProgressBar
+        android:id="@+id/progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Resposta"
+        app:layout_constraintBottom_toBottomOf="@+id/response"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/response"
+        android:visibility="gone"
+        style="?android:attr/progressBarStyle"
+        />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginLeft="32dp"
+        android:layout_marginBottom="8dp"
+        android:text="Resultado"
+        android:textColor="#000000"
+        android:textSize="18dp"
+        app:layout_constraintBottom_toTopOf="@+id/response"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+    <TextView
+        android:id="@+id/response"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginLeft="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginRight="32dp"
+        android:background="@drawable/rect"
+        android:elevation="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup"
+        app:layout_constraintVertical_bias="0.23000002"
+
+        />
+
+
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.120000005">
+
+        <RadioButton
+            android:id="@+id/transfer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Transferir dinheiro"
+            android:onClick="onRadioButtonClicked"
+            android:checked="true"
+            />
+
+        <RadioButton
+            android:id="@+id/bigAudio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Áudio longo"
+            android:onClick="onRadioButtonClicked"
+            />
+
+        <RadioButton
+            android:id="@+id/cpf"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CPF"
+            android:onClick="onRadioButtonClicked"
+            />
+
+
+        <RadioButton
+            android:id="@+id/music"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Música"
+            android:onClick="onRadioButtonClicked"
+            />
+
+        <RadioButton
+            android:id="@+id/noEndSilence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Áudio sem silêncio no final"
+            android:onClick="onRadioButtonClicked"
+            />
+
+        <RadioButton
+            android:id="@+id/pizza"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pizza"
+            android:onClick="onRadioButtonClicked"
+            />
+
+
+        <RadioButton
+            android:id="@+id/silence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Silêncio"
+            android:onClick="onRadioButtonClicked"
+            />
+
+    </RadioGroup>
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
+        android:id="@+id/play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
@@ -27,6 +134,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        android:src="@drawable/ic_baseline_play_arrow_24"
         />
 
 

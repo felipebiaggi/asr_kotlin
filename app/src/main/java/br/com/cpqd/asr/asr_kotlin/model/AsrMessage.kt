@@ -94,7 +94,6 @@ class AsrMessage private constructor() {
 
         if (mHeader.containsKey("Content-Length")
             && !mHeader["Content-Length"].isNullOrBlank()
-            && body.isNotEmpty()
         ) {
             mHeader["Content-Length"]?.let {
                 if (Integer.parseInt(it) == body.size) {
@@ -120,6 +119,13 @@ class AsrMessage private constructor() {
         mProtocol = ASR_PROTOCOL
         mVersion = ASR_VERSION
         mMethod = method
+    }
+
+    constructor(method: String, headerFields: Map<String, String>): this(){
+        mProtocol = ASR_PROTOCOL
+        mVersion = ASR_VERSION
+        mMethod = method
+        mHeader = headerFields
     }
 
 
