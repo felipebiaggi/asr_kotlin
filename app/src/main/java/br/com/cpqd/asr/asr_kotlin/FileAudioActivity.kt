@@ -9,9 +9,9 @@ import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_O
 import kotlinx.android.synthetic.main.activity_file_audio.*
 import kotlin.concurrent.thread
 
-class FileAudioActivity : AppCompatActivity(), View.OnClickListener {
+class FileAudioActivity : AppCompatActivity(), View.OnClickListener, SpeechRecognizerResult {
 
-    var audio: FileAudioSource? = null
+    private var fileAudio: String = "bank_transfira_8k.wav"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,83 +23,73 @@ class FileAudioActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(v: View?) {
+
         play.isEnabled = false
         progress.show()
 
-        thread(start = true, isDaemon = true, name = "ResultThread") {
+        val audio = FileAudioSource(applicationContext.assets.open(fileAudio))
 
-            val speech = SpeechRecognizer.Builder()
-                .serverURL("wss://speech.cpqd.com.br/asr/ws/v2/recognize/8k")
-                .credentials("felipe", "felipe.cpqd")
-                .build()
+        val speech = SpeechRecognizer.Builder()
+            .serverURL("wss://speech.cpqd.com.br/asr/ws/v2/recognize/8k")
+            .credentials("felipe", "felipe.cpqd")
+            .listerning(this)
+            .build()
 
-            audio?.let {
-                speech.recognizer(it, TYPE_OCTET_STREAM)
-            }
+        speech.recognizer(audio, TYPE_OCTET_STREAM)
 
-            val result = speech.waitRecognitionResult()
-
-            result?.let { result ->
-                if (result.alternatives.isNotEmpty()) {
-                    response.text = result.alternatives.first().text
-                }
-            }
-
-            //don't do it
-            runOnUiThread {
-                play.isEnabled = true
-                progress.hide()
-            }
-        }
     }
 
 
     fun onRadioButtonClicked(view: View) {
+
         if (view is RadioButton) {
             val checked = view.isChecked
 
             when (view.id) {
                 R.id.transfer -> {
                     if (checked) {
-                        audio =
-                            FileAudioSource(applicationContext.assets.open("bank_transfira_8k.wav"))
+                        fileAudio = "bank_transfira_8k.wav"
                     }
                 }
                 R.id.bigAudio -> {
                     if (checked) {
-                        audio = FileAudioSource(applicationContext.assets.open("big_audio_8k.wav"))
+                        fileAudio = "big_audio_8k.wav"
                     }
                 }
                 R.id.cpf -> {
                     if (checked) {
-                        audio = FileAudioSource(applicationContext.assets.open("cpf_8k.wav"))
+                        fileAudio = "cpf_8k.wav"
                     }
                 }
                 R.id.music -> {
                     if (checked) {
-                        audio = FileAudioSource(applicationContext.assets.open("music.wav"))
+                        fileAudio = "music.wav"
                     }
                 }
                 R.id.noEndSilence -> {
                     if (checked) {
-                        audio =
-                            FileAudioSource(applicationContext.assets.open("no_end_silence_8k.wav"))
+                        fileAudio = "no_end_silence_8k.wav"
                     }
                 }
                 R.id.pizza -> {
                     if (checked) {
-                        audio =
-                            FileAudioSource(applicationContext.assets.open("pizza_veg_audio_8k.wav"))
+                        fileAudio = "pizza_veg_audio_8k.wav"
                     }
                 }
                 R.id.silence -> {
                     if (checked) {
-                        audio = FileAudioSource(applicationContext.assets.open("silence_8k.wav"))
+                        fileAudio = "silence_8k.wav"
                     }
                 }
             }
         }
     }
 
-
+    override fun onResult(result: String) {
+        runOnUiThread{
+            responseFile.text = result
+            play.isEnabled = true
+            progress.hide()
+        }
+    }
 }

@@ -89,8 +89,6 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
 
 
     override fun close() {
-        stopped = true
-        recorder?.stop()
         recorder?.release()
     }
 

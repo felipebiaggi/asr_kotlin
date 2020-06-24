@@ -3,8 +3,6 @@ package br.com.cpqd.asr.asr_kotlin
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
-import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
@@ -13,11 +11,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import br.com.cpqd.asr.asr_kotlin.audio.MicAudioSource
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_AUDIO_RAW
-import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_OCTET_STREAM
-import kotlinx.android.synthetic.main.activity_file_audio.*
 import kotlinx.android.synthetic.main.activity_microphone_audio.*
 import kotlin.concurrent.thread
-import kotlin.math.log
 
 class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, SpeechRecognizerResult {
 
@@ -49,49 +44,34 @@ class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, Speec
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
+
                 Toast.makeText(this, "Gravando...", Toast.LENGTH_SHORT).show()
+
                 audio = MicAudioSource(8000).also {
                     it.startRecording()
                 }
+
                 return false
             }
             MotionEvent.ACTION_UP -> {
-                Toast.makeText(this, "Enviando...", Toast.LENGTH_SHORT).show()
-                audio?.stop()
 
+                Toast.makeText(this, "Enviando...", Toast.LENGTH_SHORT).show()
+
+                audio?.stop()
 
                 progressMic.show()
                 playMic.isEnabled = false
 
-                thread(start = true, isDaemon = true, name = "ResultThreadMic") {
+                val speech = SpeechRecognizer.Builder()
+                    .serverURL("wss://speech.cpqd.com.br/asr/ws/v2/recognize/8k")
+                    .credentials("felipe", "felipe.cpqd")
+                    .listerning(this)
+                    .build()
 
-                    Thread.sleep(1000)
-
-                    val speech = SpeechRecognizer.Builder()
-                        .serverURL("wss://speech.cpqd.com.br/asr/ws/v2/recognize/8k")
-                        .credentials("felipe", "felipe.cpqd")
-                        .result(this)
-                        .build()
-
-                    audio?.let {
-                        speech.recognizer(it, TYPE_AUDIO_RAW)
-                    }
-
-                    /*val result = speech.waitRecognitionResult()
-
-                    result?.let { result ->
-                        if (result.alternatives.isNotEmpty()) {
-                            responseMic.text = result.alternatives.first().text
-                        }
-                    }*/
-
-                    //don't do it
-                    runOnUiThread {
-                        playMic.isEnabled = true
-                        progressMic.hide()
-                    }
-
+                audio?.let {
+                    speech.recognizer(it, TYPE_AUDIO_RAW)
                 }
+
 
                 return false
             }
@@ -99,9 +79,11 @@ class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, Speec
         return false
     }
 
-    override fun callback(result: String) {
+    override fun onResult(result: String) {
         runOnUiThread {
-            responseMic.text = StringBuilder("${responseMic.text} $result")
+            responseMic.text = result
+            playMic.isEnabled = true
+            progressMic.hide()
         }
     }
 

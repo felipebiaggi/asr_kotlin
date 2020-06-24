@@ -11,10 +11,10 @@
         android:id="@+id/progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/response"
+        app:layout_constraintBottom_toBottomOf="@+id/responseFile"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/response"
+        app:layout_constraintTop_toTopOf="@+id/responseFile"
         android:visibility="gone"
         style="?android:attr/progressBarStyle"
         />
@@ -29,12 +29,12 @@
         android:text="Resultado"
         android:textColor="#000000"
         android:textSize="18dp"
-        app:layout_constraintBottom_toTopOf="@+id/response"
+        app:layout_constraintBottom_toTopOf="@+id/responseFile"
         app:layout_constraintStart_toStartOf="parent" />
 
 
     <TextView
-        android:id="@+id/response"
+        android:id="@+id/responseFile"
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:layout_marginStart="32dp"
@@ -47,7 +47,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-
         app:layout_constraintVertical_bias="0.65" />
 
 

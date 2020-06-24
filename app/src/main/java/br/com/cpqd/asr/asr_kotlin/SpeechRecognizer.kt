@@ -1,9 +1,6 @@
 package br.com.cpqd.asr.asr_kotlin
 
-import android.content.Context
-import android.os.Build
 import br.com.cpqd.asr.asr_kotlin.audio.AudioEncoding
-import br.com.cpqd.asr.asr_kotlin.audio.FileAudioSource
 import br.com.cpqd.asr.asr_kotlin.exception.InvalidCredentialsException
 import br.com.cpqd.asr.asr_kotlin.exception.URLBlankException
 import java.net.URI
@@ -25,7 +22,7 @@ class SpeechRecognizer {
 
         var sampleSize: AudioEncoding = AudioEncoding.LINEAR16
 
-        var result : SpeechRecognizerResult? = null
+        var listerning : SpeechRecognizerResult? = null
 
         fun serverURL(url: String): Builder {
             if (url.isBlank()) {
@@ -64,14 +61,11 @@ class SpeechRecognizer {
             return this
         }
 
-        fun result(result: SpeechRecognizerResult): Builder {
-            this.result = result
+        fun listerning(result: SpeechRecognizerResult): Builder {
+            this.listerning = result
             return this
         }
 
-        fun builder(): Builder {
-            return Builder()
-        }
 
         fun build(): SpeechRecognizerImpl {
             return SpeechRecognizerImpl(this)
