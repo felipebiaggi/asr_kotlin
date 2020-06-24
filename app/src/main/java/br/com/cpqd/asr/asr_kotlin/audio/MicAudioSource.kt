@@ -22,7 +22,6 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
 
     private var started: Boolean = false
 
-    private var finished = false
 
     init {
         val recorderSampleRate: Int = when (sampleRate) {
@@ -47,7 +46,7 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
             recorderSampleRate,
             RECORDER_NUMBER_OF_CHANNELS,
             RECORDER_AUDIO_FORMAT,
-            100000
+            3145728
         )
     }
 

@@ -25,6 +25,8 @@ class SpeechRecognizer {
 
         var sampleSize: AudioEncoding = AudioEncoding.LINEAR16
 
+        var result : SpeechRecognizerResult? = null
+
         fun serverURL(url: String): Builder {
             if (url.isBlank()) {
                 throw URLBlankException()
@@ -59,6 +61,11 @@ class SpeechRecognizer {
 
         fun sampleSize(sampleSize: AudioEncoding): Builder {
             this.sampleSize = sampleSize
+            return this
+        }
+
+        fun result(result: SpeechRecognizerResult): Builder {
+            this.result = result
             return this
         }
 
