@@ -1,11 +1,14 @@
 package br.com.cpqd.asr.asr_kotlin
 
+import android.util.AndroidRuntimeException
 import android.util.Log
+import br.com.cpqd.asr.asr_kotlin.audio.AudioSource
 import br.com.cpqd.asr.asr_kotlin.audio.FileAudioSource
 import br.com.cpqd.asr.asr_kotlin.constant.CharsetConstants.Companion.NETWORK_CHARSET
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_AUDIO_RAW
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_OCTET_STREAM
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_CREATE_SESSION
+import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_RELEASE_SESSION
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_SEND_AUDIO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_START_RECOGNITION
 import br.com.cpqd.asr.asr_kotlin.model.AsrMessage
@@ -17,6 +20,7 @@ import com.neovisionaries.ws.client.*
 import java.io.IOException
 import java.lang.IllegalArgumentException
 import java.lang.RuntimeException
+import java.util.*
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -28,13 +32,9 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
     private val TAG: String = SpeechRecognizerImpl::class.java.simpleName
 
-    private var query = mutableListOf<AsrMessage>()
+    private var query = Collections.synchronizedList(LinkedList<AsrMessage>())
 
     private var isSending: Boolean = false
-
-    private val bufferPacket: ReentrantLock = ReentrantLock()
-
-    private val conditionBufferPacket: Condition = bufferPacket.newCondition()
 
     private val result: ReentrantLock = ReentrantLock()
 
@@ -43,6 +43,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
     private val wss: WebSocket
 
     private var recognitionResult: RecognitionResult? = null
+
 
     init {
 
@@ -58,14 +59,12 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         thread(start = true, name = "WebSocketConnectionThread") {
             try {
                 wss.connect()
-
             } catch (e: OpeningHandshakeException) {
                 val sl = e.statusLine
                 println("=== Status Line ===")
                 System.out.format("HTTP Version  = %s\n", sl.httpVersion)
                 System.out.format("Status Code   = %d\n", sl.statusCode)
                 System.out.format("Reason Phrase = %s\n", sl.reasonPhrase)
-
 
                 val headers =
                     e.headers
@@ -88,6 +87,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
             } catch (e: WebSocketException) {
                 Log.d(TAG, e.printStackTrace().toString())
+                e.message?.let { Log.d(TAG, it) }
 
                 result.withLock {
                     conditionResult.signal()
@@ -110,38 +110,40 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         websocket: WebSocket?,
         headers: MutableMap<String, MutableList<String>>?
     ) {
-        recognizer(builder.audio, builder.audioType)
+        Log.d(TAG, "Connected")
         websocket?.sendBinary(AsrMessage(METHOD_CREATE_SESSION, UserAgent.toMap()).toByteArray())
 
     }
 
     override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
         val responseMessage = AsrMessage(binary)
+        Log.d(TAG, responseMessage.toString())
+        responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
+            Log.d(TAG, it)
+        }
 
         if (responseMessage.mMethod == "RESPONSE" && responseMessage.mHeader["Session-Status"] == "IDLE") {
+            Log.d(TAG, "Start Recognition")
             websocket?.sendBinary(startRecognition())
         }
 
         if (responseMessage.mMethod == "RESPONSE" && responseMessage.mHeader["Session-Status"] == "LISTENING") {
 
             if (!isSending) {
+                Log.d(TAG, "Sending: ${query.size}")
                 isSending = true
-                thread(start = true, name = "SendAudioThread", isDaemon = true) {
-                    var isLastPacket = false
-                    while (!isLastPacket) {
-                        bufferPacket.withLock {
-                            if (query.size > 0) {
-                                val message = query.first()
-                                query.removeAt(0)
-
-                                if (message.mHeader["LastPacket"] == "true") isLastPacket = false
-
-                                websocket?.sendBinary(message.toByteArray())
-
-                                conditionBufferPacket.signal()
-                            }
+                thread(start = true, name = "SendAudioThread") {
+                    //var isLastPacket = false
+                    while(query.size > 0) {
+                        if (query.size > 0) {
+                            query.first()
+                            val message = query.first()
+                            query.removeAt(0)
+                            //if (message.mHeader["LastPacket"] == "true") isLastPacket = true
+                            websocket?.sendBinary(message.toByteArray())
                         }
                     }
+                    Log.d(TAG, "Ultimo pacote enviado")
                 }
             }
         }
@@ -149,26 +151,30 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         if (responseMessage.mMethod == "RECOGNITION_RESULT") {
             result.withLock {
                 responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
-                    recognitionResult = Gson().fromJson(it, RecognitionResult::class.java)
+                    builder.result?.callback(Gson().fromJson(it, RecognitionResult::class.java).getString())
                 }
                 conditionResult.signal()
             }
-            websocket?.disconnect()
+
+            Log.d(TAG, "Finalizado")
+           // websocket?.sendBinary(AsrMessage(METHOD_RELEASE_SESSION).toByteArray())
+            //websocket?.disconnect()
         }
 
     }
 
 
     override fun waitRecognitionResult(): RecognitionResult? {
-        result.withLock {
+        /*result.withLock {
             conditionResult.await()
             return recognitionResult
-        }
+        }*/
+        return recognitionResult
     }
 
-    private fun recognizer(audio: FileAudioSource?, contentType: String?) {
+    fun recognizer(fileAudio: AudioSource, contentType: String) {
 
-        if (contentType.isNullOrBlank() || !(
+        if (contentType.isBlank() || !(
                     contentType.contentEquals(TYPE_OCTET_STREAM)
                             || contentType.contentEquals(
                         TYPE_AUDIO_RAW
@@ -177,9 +183,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             throw IllegalArgumentException()
         }
 
-        if (audio == null) {
-            throw IllegalArgumentException()
-        }
+
 
         thread(start = true, name = "AudioBufferThread", isDaemon = true) {
             val buffer = Util.createBufferSizer(
@@ -193,13 +197,19 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
                 while (read != -1) {
 
-                    read = audio.read(buffer)
+                    read = fileAudio.read(buffer)
 
                     val bufferToSend: ByteArray = if (read > 0 && read != buffer.size) {
                         buffer.copyOf(read)
                     } else {
                         buffer
                     }
+
+                    //Arrumar isso depois
+                    var copy = ByteArray(bufferToSend.size)
+                    System.arraycopy(bufferToSend, 0, copy, 0, bufferToSend.size)
+
+                    //Log.d(TAG, read.toString())
 
                     val message = if (read > 0) {
                         AsrMessage(
@@ -209,7 +219,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                                 "Content-Length" to bufferToSend.size.toString(),
                                 "Content-Type" to contentType
                             ),
-                            bufferToSend
+                            copy
                         )
                     } else {
                         AsrMessage(
@@ -222,18 +232,18 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                             ByteArray(0)
                         )
                     }
-
-                    bufferPacket.withLock {
-                        query.add(message)
-                        conditionBufferPacket.await()
-                    }
-
+                    query.add(message)
                 }
 
             } catch (e: IOException) {
-                throw RuntimeException(e)
+                e.message?.let { Log.w(TAG, it) }
+            } catch (e: AndroidRuntimeException) {
+                e.message?.let { Log.w(TAG, it) }
+            } catch (e: IllegalStateException) {
+                e.message?.let { Log.w(TAG, it) }
             } finally {
-                audio.close()
+                Log.d(TAG, "File Audio Fechado")
+                fileAudio.close()
             }
 
         }
@@ -247,9 +257,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             mapOf
                 (
                 "Accept" to "application/json",
-                "decoder.maxSentences" to "3",
-                "noInputTimeout.enabled" to "true",
-                "noInputTimeout.value" to "5000",
+                "decoder.continuousMode" to "true",
                 "Content-Type" to "text/uri-list",
                 "Content-Length" to "19"
             ),

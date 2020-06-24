@@ -4,10 +4,8 @@ import java.io.InputStream
 
 class FileAudioSource(private val inputStream: InputStream) : AudioSource {
 
-    private var finished = false
 
     override fun read(byte: ByteArray): Int {
-        if(finished) return -1
         return inputStream.read(byte, 0, byte.size)
     }
 
@@ -15,8 +13,6 @@ class FileAudioSource(private val inputStream: InputStream) : AudioSource {
         inputStream.close()
     }
 
-    override fun finish() {
-        finished = true
-    }
+    override fun finish() {}
 
 }
