@@ -82,6 +82,8 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
     override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
         val responseMessage = AsrMessage(binary)
 
+        Log.d(TAG, responseMessage.toString())
+
 
         if (responseMessage.mMethod == "RESPONSE" && responseMessage.mHeader["Session-Status"] == "IDLE") {
             websocket?.sendBinary(startRecognition())
@@ -101,10 +103,12 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         }
 
         if (responseMessage.mMethod == "RECOGNITION_RESULT") {
+            Log.d(TAG, "ENTROU NO RESULT")
             responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
                 builder.listerning?.onResult(
                     Gson().fromJson(it, RecognitionResult::class.java).getString()
                 )
+                Log.d(TAG, Gson().fromJson(it, RecognitionResult::class.java).getString())
             }
             websocket?.disconnect()
         }
@@ -184,11 +188,28 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
 
     private fun startRecognition(): ByteArray {
-        return AsrMessage(
+        val messae = AsrMessage(
             METHOD_START_RECOGNITION,
             builder.recognizerConfig.configMap(),
             builder.recognizerConfigBody.toByteArray(NETWORK_CHARSET)
-        ).toByteArray()
+        )
+
+        Log.d(TAG, messae.toString())
+
+        val message = AsrMessage(
+            METHOD_START_RECOGNITION,
+            mutableMapOf
+                (
+                "Accept" to "application/json",
+                "Content-Type" to "text/uri-list",
+                "Content-Length" to "19"
+            ),
+            "builtin:slm/general".toByteArray(NETWORK_CHARSET)
+        )
+
+        Log.d(TAG, message.toString())
+
+        return message.toByteArray()
     }
 
     private fun clear() {

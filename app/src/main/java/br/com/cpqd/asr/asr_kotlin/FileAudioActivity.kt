@@ -17,7 +17,6 @@ class FileAudioActivity : AppCompatActivity(), View.OnClickListener, SpeechRecog
 
     private val recognitionConfig: RecognitionConfig = RecognitionConfig.Builder()
         .accept("application/json")
-        .maxSentences(5)
         .noInputTimeoutEnabled(true)
         .noInputTimeoutMilis(1000)
         .contentType("text/uri-list")

@@ -16,7 +16,7 @@ class RecognitionConfig {
 
     private fun setContentType(contentType: String?) {
         if (contentType != null)
-            map["Content-ID"] = contentType
+            map["Content-Type"] = contentType
     }
 
     private fun setNoInputTimeoutEnabled(noInputTimeoutEnabled: Boolean?) {
