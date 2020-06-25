@@ -80,6 +80,7 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
         try {
             Log.d(TAG, "Gravação Terminada")
             recorder?.stop()
+            recorder?.release()
             stopped = true
         } catch (e: IllegalStateException) {
             e.message?.let { Log.w(TAG, it) }

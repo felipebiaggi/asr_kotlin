@@ -7,7 +7,6 @@ import br.com.cpqd.asr.asr_kotlin.constant.CharsetConstants.Companion.NETWORK_CH
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_AUDIO_RAW
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_OCTET_STREAM
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_CREATE_SESSION
-import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_RELEASE_SESSION
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_SEND_AUDIO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_START_RECOGNITION
 import br.com.cpqd.asr.asr_kotlin.model.AsrMessage
@@ -17,9 +16,9 @@ import br.com.cpqd.asr.asr_kotlin.util.Util
 import com.google.gson.Gson
 import com.neovisionaries.ws.client.*
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.concurrent.thread
+
 
 class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
     WebSocketListenerAsr {
@@ -50,7 +49,29 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             try {
                 wss.connect()
             } catch (e: OpeningHandshakeException) {
-                e.message?.let { Log.d(TAG, it) }
+                val sl = e.statusLine
+                println("=== Status Line ===")
+                System.out.format("HTTP Version  = %s\n", sl.httpVersion)
+                System.out.format("Status Code   = %d\n", sl.statusCode)
+                System.out.format("Reason Phrase = %s\n", sl.reasonPhrase)
+
+
+                val headers =
+                    e.headers
+                println("=== HTTP Headers ===")
+                for ((name, values) in headers) {
+
+                    if (values == null || values.size == 0) {
+                        println(name)
+                        continue
+                    }
+                    for (value in values) {
+                        System.out.format("%s: %s\n", name, value)
+                    }
+                }
+
+
+
                 clear()
 
             } catch (e: WebSocketException) {
@@ -82,9 +103,6 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
     override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
         val responseMessage = AsrMessage(binary)
 
-        Log.d(TAG, responseMessage.toString())
-
-
         if (responseMessage.mMethod == "RESPONSE" && responseMessage.mHeader["Session-Status"] == "IDLE") {
             websocket?.sendBinary(startRecognition())
         }
@@ -103,12 +121,11 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         }
 
         if (responseMessage.mMethod == "RECOGNITION_RESULT") {
-            Log.d(TAG, "ENTROU NO RESULT")
+
             responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
                 builder.listerning?.onResult(
                     Gson().fromJson(it, RecognitionResult::class.java).getString()
                 )
-                Log.d(TAG, Gson().fromJson(it, RecognitionResult::class.java).getString())
             }
             websocket?.disconnect()
         }
@@ -134,6 +151,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                 builder.audioSampleRate,
                 builder.sampleSize.getSampleSize()
             )
+
             var read = 0
 
             try {
@@ -188,28 +206,11 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
 
     private fun startRecognition(): ByteArray {
-        val messae = AsrMessage(
+        return AsrMessage(
             METHOD_START_RECOGNITION,
             builder.recognizerConfig.configMap(),
             builder.recognizerConfigBody.toByteArray(NETWORK_CHARSET)
-        )
-
-        Log.d(TAG, messae.toString())
-
-        val message = AsrMessage(
-            METHOD_START_RECOGNITION,
-            mutableMapOf
-                (
-                "Accept" to "application/json",
-                "Content-Type" to "text/uri-list",
-                "Content-Length" to "19"
-            ),
-            "builtin:slm/general".toByteArray(NETWORK_CHARSET)
-        )
-
-        Log.d(TAG, message.toString())
-
-        return message.toByteArray()
+        ).toByteArray()
     }
 
     private fun clear() {

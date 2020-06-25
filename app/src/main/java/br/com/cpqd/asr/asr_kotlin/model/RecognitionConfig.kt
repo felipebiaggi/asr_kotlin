@@ -49,9 +49,9 @@ class RecognitionConfig {
             map["decoder.maxSentences"] = decoderMaxSentences.toString()
     }
 
-    private fun setHeadMarginMiliseconds(endpointHedMargin: Int?) {
-        if (endpointHedMargin != null)
-            map["endpointer.headMargin"] = endpointHedMargin.toString()
+    private fun setHeadMarginMiliseconds(endpointHeadMargin: Int?) {
+        if (endpointHeadMargin != null)
+            map["endpointer.headMargin"] = endpointHeadMargin.toString()
     }
 
     private fun setTailMarginMiliseconds(endpointerTailMargin: Int?) {
@@ -89,6 +89,38 @@ class RecognitionConfig {
             map["decoder.confidenceThreshold"] = decoderConfidenceThreshold.toString()
     }
 
+    private fun setEndpointerUseToneDetectors(endpointerUseToneDetectors: Boolean?) {
+        if (endpointerUseToneDetectors != null)
+            map["endpointer.useToneDetectors"] = endpointerUseToneDetectors.toString()
+    }
+
+    private fun setWordDetails(wordDetails: String?) {
+        if (wordDetails != null)
+            map["decoder.wordDetails"] = wordDetails
+    }
+
+    private fun setMaxSegmentDuration(maxSegmentDuration: Int?) {
+        if (maxSegmentDuration != null)
+            map["endpointer.maxSegmentDuration"] = maxSegmentDuration.toString()
+    }
+
+    private fun setSegmentOverlapTime(segmentOverlapTime: Int?) {
+        if(segmentOverlapTime != null)
+            map["endpointer.segmentOverlapTime"] = segmentOverlapTime.toString()
+    }
+
+    private fun setHintsWords(hintsWords: String?){
+        if(hintsWords != null)
+            map["hints.words"] = hintsWords
+    }
+
+    private fun setTextifyEnabled(textifyEnabled: Boolean?) {
+        if(textifyEnabled != null)
+            map["textify.enabled"] = textifyEnabled.toString()
+    }
+
+
+
     fun configMap(): MutableMap<String, String> {
         return map
     }
@@ -122,6 +154,12 @@ class RecognitionConfig {
         private var endPointerAutoLevelLen: Int? = null
         private var endPointerLevelMode: Int? = null
         private var endPointerLevelThreshold: Int? = null
+        private var endpointerUseToneDetectors: Boolean? = null
+        private var wordDetails: String? = null
+        private var maxSegmentDuration: Int? = null
+        private var segmentOverlapTime: Int? = null
+        private var hintsWords: String? = null
+        private var textifyEnabled: Boolean? = null
 
 
         fun continuousMode(value: Boolean): Builder {
@@ -204,6 +242,36 @@ class RecognitionConfig {
             return this
         }
 
+        fun endpointerUseToneDetectors(value: Boolean): Builder {
+            this.endpointerUseToneDetectors = value
+            return this
+        }
+
+        fun wordDetails(value: String): Builder {
+            this.wordDetails = value
+            return this
+        }
+
+        fun maxSegmentDuration(value: Int): Builder {
+            this.maxSegmentDuration = value
+            return this
+        }
+
+        fun segmentOverlapTime(value: Int): Builder {
+            this.segmentOverlapTime = value
+            return this
+        }
+
+        fun hintsWords(value: String): Builder {
+            this.hintsWords = value
+            return this
+        }
+
+        fun textifyEnabled(value: Boolean): Builder {
+            this.textifyEnabled = value
+            return this
+        }
+
         fun accept(value: String): Builder {
             this.accept = value
             return this
@@ -238,6 +306,11 @@ class RecognitionConfig {
             config.setEndpointerLevelThreshold(endPointerLevelThreshold)
             config.setNoInputTimeoutEnabled(noInputTimeoutEnabled)
             config.setRecognitionTimeoutEnabled(recognitionTimeoutEnabled)
+            config.setEndpointerUseToneDetectors(endpointerUseToneDetectors)
+            config.setWordDetails(wordDetails)
+            config.setMaxSegmentDuration(maxSegmentDuration)
+            config.setSegmentOverlapTime(segmentOverlapTime)
+            config.setHintsWords(hintsWords)
 
             return config
         }
