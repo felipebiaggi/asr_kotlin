@@ -52,7 +52,7 @@ class AsrMessage private constructor() {
             field = value
         }
 
-    var mHeader: Map<String, String> = mutableMapOf()
+    var mHeader = mutableMapOf<String, String>()
 
     var mBody: ByteArray? = null
 
@@ -106,12 +106,13 @@ class AsrMessage private constructor() {
     }
 
 
-    constructor(method: String, headerFields: Map<String, String>, body: ByteArray) : this() {
+    constructor(method: String, headerFields: MutableMap<String, String>, body: ByteArray) : this() {
         mProtocol = ASR_PROTOCOL
         mVersion = ASR_VERSION
         mMethod = method
         mHeader = headerFields
         mBody = body
+        setHeaderBodySize()
     }
 
 
@@ -121,7 +122,7 @@ class AsrMessage private constructor() {
         mMethod = method
     }
 
-    constructor(method: String, headerFields: Map<String, String>): this(){
+    constructor(method: String, headerFields: MutableMap<String, String>): this(){
         mProtocol = ASR_PROTOCOL
         mVersion = ASR_VERSION
         mMethod = method
@@ -129,7 +130,7 @@ class AsrMessage private constructor() {
     }
 
 
-    private fun getHeaderFieldValue(headerLines: List<String>): Map<String, String> {
+    private fun getHeaderFieldValue(headerLines: List<String>): MutableMap<String, String> {
         val listFields = mutableMapOf<String, String>()
 
         for (x in 1 until headerLines.size) {
@@ -210,6 +211,13 @@ class AsrMessage private constructor() {
         }
 
     }
+
+    private fun setHeaderBodySize(){
+        mBody?.let {
+            mHeader["Content-Length"] = it.size.toString()
+        }
+    }
+
 
     override fun toString(): String {
         return "Message(TAG='$TAG', mProtocol=$mProtocol, mVersion=$mVersion, mMethod=$mMethod, mHeader=$mHeader, mBody=${mBody?.contentToString()})"

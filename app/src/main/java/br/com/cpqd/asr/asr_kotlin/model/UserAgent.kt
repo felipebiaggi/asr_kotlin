@@ -26,7 +26,7 @@ class UserAgent {
 
         private val appVersion: String = BuildConfig.VERSION_NAME
 
-        fun toMap(): Map<String, String> {
+        fun toMap(): MutableMap<String, String> {
             return mutableMapOf("User-Agent" to stringify())
         }
 

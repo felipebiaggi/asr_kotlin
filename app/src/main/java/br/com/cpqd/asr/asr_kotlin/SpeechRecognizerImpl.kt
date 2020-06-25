@@ -123,9 +123,8 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             throw IllegalArgumentException()
         }
 
-
-
         thread(start = true, name = "AudioBufferThread", isDaemon = true) {
+
             val buffer = Util.createBufferSizer(
                 builder.chunkLength,
                 builder.audioSampleRate,
@@ -153,9 +152,8 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                     val message = if (read > 0) {
                         AsrMessage(
                             METHOD_SEND_AUDIO,
-                            mapOf(
+                            mutableMapOf(
                                 "LastPacket" to "false",
-                                "Content-Length" to bufferToSend.size.toString(),
                                 "Content-Type" to contentType
                             ),
                             copy
@@ -163,12 +161,10 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                     } else {
                         AsrMessage(
                             METHOD_SEND_AUDIO,
-                            mapOf(
+                            mutableMapOf(
                                 "LastPacket" to "true",
-                                "Content-Length" to "0",
                                 "Content-Type" to contentType
-                            ),
-                            ByteArray(0)
+                            )
                         )
                     }
                     query.add(message)
@@ -186,22 +182,16 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         }
     }
 
-    //hard coded!
-    //expected to change
+
     private fun startRecognition(): ByteArray {
         return AsrMessage(
             METHOD_START_RECOGNITION,
-            mapOf
-                (
-                "Accept" to "application/json",
-                "Content-Type" to "text/uri-list",
-                "Content-Length" to "19"
-            ),
-            "builtin:slm/general".toByteArray(NETWORK_CHARSET)
+            builder.recognizerConfig.configMap(),
+            builder.recognizerConfigBody.toByteArray(NETWORK_CHARSET)
         ).toByteArray()
     }
 
-    private fun clear(){
+    private fun clear() {
         builder.listerning?.onResult("")
     }
 
