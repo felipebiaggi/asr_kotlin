@@ -10,6 +10,7 @@ import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_SEND_AUDIO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_START_RECOGNITION
 import br.com.cpqd.asr.asr_kotlin.model.AsrMessage
+import br.com.cpqd.asr.asr_kotlin.model.RecognitionError
 import br.com.cpqd.asr.asr_kotlin.model.RecognitionResult
 import br.com.cpqd.asr.asr_kotlin.model.UserAgent
 import br.com.cpqd.asr.asr_kotlin.util.Util
@@ -70,12 +71,9 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                     }
                 }
 
-
-
                 clear()
-
             } catch (e: WebSocketException) {
-                e.message?.let { Log.d(TAG, it) }
+                e.message?.let { Log.w(TAG, it) }
                 clear()
             }
         }
@@ -120,6 +118,12 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             }
         }
 
+        if (responseMessage.mHeader.containsKey("Error-Code")) {
+            Log.w(TAG, RecognitionError(responseMessage).toString())
+            websocket?.disconnect()
+            clear()
+        }
+
         if (responseMessage.mMethod == "RECOGNITION_RESULT") {
 
             responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
@@ -158,17 +162,19 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
 
                 while (read != -1) {
 
+
                     read = fileAudio.read(buffer)
 
-                    val bufferToSend: ByteArray = if (read > 0 && read != buffer.size) {
+
+                    val newBuffer: ByteArray = if (read > 0 && read != buffer.size) {
                         buffer.copyOf(read)
                     } else {
                         buffer
                     }
 
-                    //Arrumar isso depois
-                    var copy = ByteArray(bufferToSend.size)
-                    System.arraycopy(bufferToSend, 0, copy, 0, bufferToSend.size)
+
+                    val bufferToSend = ByteArray(newBuffer.size)
+                    System.arraycopy(newBuffer, 0, bufferToSend, 0, newBuffer.size)
 
 
                     val message = if (read > 0) {
@@ -178,7 +184,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                                 "LastPacket" to "false",
                                 "Content-Type" to contentType
                             ),
-                            copy
+                            bufferToSend
                         )
                     } else {
                         AsrMessage(

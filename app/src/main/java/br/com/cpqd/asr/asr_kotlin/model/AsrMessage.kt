@@ -106,7 +106,11 @@ class AsrMessage private constructor() {
     }
 
 
-    constructor(method: String, headerFields: MutableMap<String, String>, body: ByteArray) : this() {
+    constructor(
+        method: String,
+        headerFields: MutableMap<String, String>,
+        body: ByteArray
+    ) : this() {
         mProtocol = ASR_PROTOCOL
         mVersion = ASR_VERSION
         mMethod = method
@@ -116,13 +120,13 @@ class AsrMessage private constructor() {
     }
 
 
-    constructor(method:String): this(){
+    constructor(method: String) : this() {
         mProtocol = ASR_PROTOCOL
         mVersion = ASR_VERSION
         mMethod = method
     }
 
-    constructor(method: String, headerFields: MutableMap<String, String>): this(){
+    constructor(method: String, headerFields: MutableMap<String, String>) : this() {
         mProtocol = ASR_PROTOCOL
         mVersion = ASR_VERSION
         mMethod = method
@@ -212,7 +216,7 @@ class AsrMessage private constructor() {
 
     }
 
-    private fun setHeaderBodySize(){
+    private fun setHeaderBodySize() {
         mBody?.let {
             mHeader["Content-Length"] = it.size.toString()
         }
@@ -220,7 +224,9 @@ class AsrMessage private constructor() {
 
 
     override fun toString(): String {
-        return "Message(TAG='$TAG', mProtocol=$mProtocol, mVersion=$mVersion, mMethod=$mMethod, mHeader=$mHeader, mBody=${mBody?.contentToString()})"
+        return "Message(TAG='$TAG', mProtocol=$mProtocol, mVersion=$mVersion, mMethod=$mMethod, mHeader=$mHeader, mBody=${mBody?.toString(
+            NETWORK_CHARSET
+        )})"
     }
 
 }

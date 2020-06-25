@@ -6,7 +6,10 @@ import android.util.Log
 import android.view.View
 import android.widget.RadioButton
 import br.com.cpqd.asr.asr_kotlin.audio.FileAudioSource
+import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants
+import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_JSON
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_OCTET_STREAM
+import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_URI_LIST
 import br.com.cpqd.asr.asr_kotlin.model.RecognitionConfig
 import kotlinx.android.synthetic.main.activity_file_audio.*
 import kotlin.concurrent.thread
@@ -16,10 +19,10 @@ class FileAudioActivity : AppCompatActivity(), View.OnClickListener, SpeechRecog
     private var fileAudio: String = "bank_transfira_8k.wav"
 
     private val recognitionConfig: RecognitionConfig = RecognitionConfig.Builder()
-        .accept("application/json")
+        .accept(TYPE_JSON)
         .noInputTimeoutEnabled(true)
-        .noInputTimeoutMilis(1000)
-        .contentType("text/uri-list")
+        .noInputTimeoutMilis(20000)
+        .contentType(TYPE_URI_LIST)
         .build()
 
 

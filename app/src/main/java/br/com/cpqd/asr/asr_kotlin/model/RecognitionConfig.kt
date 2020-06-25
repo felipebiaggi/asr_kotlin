@@ -94,9 +94,9 @@ class RecognitionConfig {
             map["endpointer.useToneDetectors"] = endpointerUseToneDetectors.toString()
     }
 
-    private fun setWordDetails(wordDetails: String?) {
+    private fun setWordDetails(wordDetails: Int?) {
         if (wordDetails != null)
-            map["decoder.wordDetails"] = wordDetails
+            map["decoder.wordDetails"] = wordDetails.toString()
     }
 
     private fun setMaxSegmentDuration(maxSegmentDuration: Int?) {
@@ -105,21 +105,34 @@ class RecognitionConfig {
     }
 
     private fun setSegmentOverlapTime(segmentOverlapTime: Int?) {
-        if(segmentOverlapTime != null)
+        if (segmentOverlapTime != null)
             map["endpointer.segmentOverlapTime"] = segmentOverlapTime.toString()
     }
 
-    private fun setHintsWords(hintsWords: String?){
-        if(hintsWords != null)
+    private fun setHintsWords(hintsWords: String?) {
+        if (hintsWords != null)
             map["hints.words"] = hintsWords
     }
 
     private fun setTextifyEnabled(textifyEnabled: Boolean?) {
-        if(textifyEnabled != null)
+        if (textifyEnabled != null)
             map["textify.enabled"] = textifyEnabled.toString()
     }
 
+    private fun setTextifyFormattingEnabled(textifyFormattingEnabled: Boolean?) {
+        if (textifyFormattingEnabled != null)
+            map["textify.formattingEnabled"] = textifyFormattingEnabled.toString()
+    }
 
+    private fun setTextifyFormattingRules(textifyFormattingRules: String?) {
+        if (textifyFormattingRules != null)
+            map["textify.formattingRules"] = textifyFormattingRules
+    }
+
+    private fun setLoggingTag(loggingTag: String?) {
+        if (loggingTag != null)
+            map["logging.tag"] = loggingTag
+    }
 
     fun configMap(): MutableMap<String, String> {
         return map
@@ -155,12 +168,14 @@ class RecognitionConfig {
         private var endPointerLevelMode: Int? = null
         private var endPointerLevelThreshold: Int? = null
         private var endpointerUseToneDetectors: Boolean? = null
-        private var wordDetails: String? = null
+        private var wordDetails: Int? = null
         private var maxSegmentDuration: Int? = null
         private var segmentOverlapTime: Int? = null
         private var hintsWords: String? = null
         private var textifyEnabled: Boolean? = null
-
+        private var textifyFormattingEnabled: Boolean? = null
+        private var textifyFormattingRules: String? = null
+        private var loggingTag: String? = null
 
         fun continuousMode(value: Boolean): Builder {
             this.continuousMode = value
@@ -247,17 +262,20 @@ class RecognitionConfig {
             return this
         }
 
-        fun wordDetails(value: String): Builder {
+        fun wordDetails(value: Int): Builder {
+            if (value < 0) throw IllegalArgumentException()
             this.wordDetails = value
             return this
         }
 
         fun maxSegmentDuration(value: Int): Builder {
+            if (value < 0) throw IllegalArgumentException()
             this.maxSegmentDuration = value
             return this
         }
 
         fun segmentOverlapTime(value: Int): Builder {
+            if (value < 0) throw IllegalArgumentException()
             this.segmentOverlapTime = value
             return this
         }
@@ -269,6 +287,21 @@ class RecognitionConfig {
 
         fun textifyEnabled(value: Boolean): Builder {
             this.textifyEnabled = value
+            return this
+        }
+
+        fun textifyFormattingEnabled(value: Boolean): Builder {
+            this.textifyFormattingEnabled = value
+            return this
+        }
+
+        fun textifyFormattingRules(value: String): Builder {
+            this.textifyFormattingRules = value
+            return this
+        }
+
+        fun loggingTag(value: String): Builder {
+            this.loggingTag = value
             return this
         }
 
@@ -311,6 +344,10 @@ class RecognitionConfig {
             config.setMaxSegmentDuration(maxSegmentDuration)
             config.setSegmentOverlapTime(segmentOverlapTime)
             config.setHintsWords(hintsWords)
+            config.setTextifyEnabled(textifyEnabled)
+            config.setTextifyFormattingEnabled(textifyFormattingEnabled)
+            config.setTextifyFormattingRules(textifyFormattingRules)
+            config.setLoggingTag(loggingTag)
 
             return config
         }
