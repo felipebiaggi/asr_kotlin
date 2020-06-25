@@ -7,19 +7,19 @@ import br.com.cpqd.asr.asr_kotlin.constant.CharsetConstants.Companion.NETWORK_CH
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_AUDIO_RAW
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_OCTET_STREAM
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_CREATE_SESSION
-import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_RELEASE_SESSION
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_SEND_AUDIO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_START_RECOGNITION
 import br.com.cpqd.asr.asr_kotlin.model.AsrMessage
+import br.com.cpqd.asr.asr_kotlin.model.RecognitionError
 import br.com.cpqd.asr.asr_kotlin.model.RecognitionResult
 import br.com.cpqd.asr.asr_kotlin.model.UserAgent
 import br.com.cpqd.asr.asr_kotlin.util.Util
 import com.google.gson.Gson
 import com.neovisionaries.ws.client.*
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.concurrent.thread
+
 
 class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
     WebSocketListenerAsr {
@@ -50,11 +50,30 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             try {
                 wss.connect()
             } catch (e: OpeningHandshakeException) {
-                e.message?.let { Log.d(TAG, it) }
-                clear()
+                val sl = e.statusLine
+                println("=== Status Line ===")
+                System.out.format("HTTP Version  = %s\n", sl.httpVersion)
+                System.out.format("Status Code   = %d\n", sl.statusCode)
+                System.out.format("Reason Phrase = %s\n", sl.reasonPhrase)
 
+
+                val headers =
+                    e.headers
+                println("=== HTTP Headers ===")
+                for ((name, values) in headers) {
+
+                    if (values == null || values.size == 0) {
+                        println(name)
+                        continue
+                    }
+                    for (value in values) {
+                        System.out.format("%s: %s\n", name, value)
+                    }
+                }
+
+                clear()
             } catch (e: WebSocketException) {
-                e.message?.let { Log.d(TAG, it) }
+                e.message?.let { Log.w(TAG, it) }
                 clear()
             }
         }
@@ -82,7 +101,6 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
     override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
         val responseMessage = AsrMessage(binary)
 
-
         if (responseMessage.mMethod == "RESPONSE" && responseMessage.mHeader["Session-Status"] == "IDLE") {
             websocket?.sendBinary(startRecognition())
         }
@@ -100,7 +118,14 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             }
         }
 
+        if (responseMessage.mHeader.containsKey("Error-Code")) {
+            Log.w(TAG, RecognitionError(responseMessage).toString())
+            websocket?.disconnect()
+            clear()
+        }
+
         if (responseMessage.mMethod == "RECOGNITION_RESULT") {
+
             responseMessage.mBody?.toString(NETWORK_CHARSET)?.let {
                 builder.listerning?.onResult(
                     Gson().fromJson(it, RecognitionResult::class.java).getString()
@@ -123,52 +148,51 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
             throw IllegalArgumentException()
         }
 
-
-
         thread(start = true, name = "AudioBufferThread", isDaemon = true) {
+
             val buffer = Util.createBufferSizer(
                 builder.chunkLength,
                 builder.audioSampleRate,
                 builder.sampleSize.getSampleSize()
             )
+
             var read = 0
 
             try {
 
                 while (read != -1) {
 
+
                     read = fileAudio.read(buffer)
 
-                    val bufferToSend: ByteArray = if (read > 0 && read != buffer.size) {
+
+                    val newBuffer: ByteArray = if (read > 0 && read != buffer.size) {
                         buffer.copyOf(read)
                     } else {
                         buffer
                     }
 
-                    //Arrumar isso depois
-                    var copy = ByteArray(bufferToSend.size)
-                    System.arraycopy(bufferToSend, 0, copy, 0, bufferToSend.size)
+
+                    val bufferToSend = ByteArray(newBuffer.size)
+                    System.arraycopy(newBuffer, 0, bufferToSend, 0, newBuffer.size)
 
 
                     val message = if (read > 0) {
                         AsrMessage(
                             METHOD_SEND_AUDIO,
-                            mapOf(
+                            mutableMapOf(
                                 "LastPacket" to "false",
-                                "Content-Length" to bufferToSend.size.toString(),
                                 "Content-Type" to contentType
                             ),
-                            copy
+                            bufferToSend
                         )
                     } else {
                         AsrMessage(
                             METHOD_SEND_AUDIO,
-                            mapOf(
+                            mutableMapOf(
                                 "LastPacket" to "true",
-                                "Content-Length" to "0",
                                 "Content-Type" to contentType
-                            ),
-                            ByteArray(0)
+                            )
                         )
                     }
                     query.add(message)
@@ -186,22 +210,16 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
         }
     }
 
-    //hard coded!
-    //expected to change
+
     private fun startRecognition(): ByteArray {
         return AsrMessage(
             METHOD_START_RECOGNITION,
-            mapOf
-                (
-                "Accept" to "application/json",
-                "Content-Type" to "text/uri-list",
-                "Content-Length" to "19"
-            ),
-            "builtin:slm/general".toByteArray(NETWORK_CHARSET)
+            builder.recognizerConfig.configMap(),
+            builder.recognizerConfigBody.toByteArray(NETWORK_CHARSET)
         ).toByteArray()
     }
 
-    private fun clear(){
+    private fun clear() {
         builder.listerning?.onResult("")
     }
 

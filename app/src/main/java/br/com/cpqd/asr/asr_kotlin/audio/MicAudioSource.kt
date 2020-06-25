@@ -22,7 +22,6 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
 
     private var started: Boolean = false
 
-
     init {
         val recorderSampleRate: Int = when (sampleRate) {
             8000 -> {
@@ -35,11 +34,6 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
                 throw IllegalArgumentException()
             }
         }
-        val minimumBufferSize = AudioRecord.getMinBufferSize(
-            recorderSampleRate,
-            RECORDER_NUMBER_OF_CHANNELS,
-            RECORDER_AUDIO_FORMAT
-        )
 
         recorder = AudioRecord(
             RECORDER_AUDIO_SOURCE,
@@ -89,11 +83,13 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
 
 
     override fun close() {
+        stopped = true
+        recorder?.stop()
         recorder?.release()
     }
 
     override fun finish() {
-       stop()
+        stop()
     }
 
 }

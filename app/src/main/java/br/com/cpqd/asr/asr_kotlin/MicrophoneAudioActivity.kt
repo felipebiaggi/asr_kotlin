@@ -11,12 +11,22 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import br.com.cpqd.asr.asr_kotlin.audio.MicAudioSource
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_AUDIO_RAW
+import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_JSON
+import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_URI_LIST
+import br.com.cpqd.asr.asr_kotlin.model.RecognitionConfig
 import kotlinx.android.synthetic.main.activity_microphone_audio.*
 import kotlin.concurrent.thread
 
 class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, SpeechRecognizerResult {
 
     private val PERMISSION_REQUEST_RECORD_AUDIO: Int = 1
+
+    private val recognitionConfig: RecognitionConfig = RecognitionConfig.Builder()
+        .accept(TYPE_JSON)
+        .contentType(TYPE_URI_LIST)
+        .waitEndMilis(2000)
+        .noInputTimeoutMilis(20000)
+        .build()
 
     private var audio: MicAudioSource? = null
 
@@ -66,6 +76,7 @@ class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, Speec
                     .serverURL("wss://speech.cpqd.com.br/asr/ws/v2/recognize/8k")
                     .credentials("felipe", "felipe.cpqd")
                     .listerning(this)
+                    .config(recognitionConfig, "builtin:slm/general")
                     .build()
 
                 audio?.let {
