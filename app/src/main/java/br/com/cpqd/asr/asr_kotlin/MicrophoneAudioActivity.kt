@@ -3,7 +3,6 @@ package br.com.cpqd.asr.asr_kotlin
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -15,11 +14,11 @@ import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_J
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_URI_LIST
 import br.com.cpqd.asr.asr_kotlin.model.RecognitionConfig
 import kotlinx.android.synthetic.main.activity_microphone_audio.*
-import kotlin.concurrent.thread
 
-class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, SpeechRecognizerResult {
+class MicrophoneAudioActivity : AppCompatActivity(), SpeechRecognizerResult, View.OnClickListener {
 
     private val PERMISSION_REQUEST_RECORD_AUDIO: Int = 1
+    private var isRecording = false
 
     private val recognitionConfig: RecognitionConfig = RecognitionConfig.Builder()
         .accept(TYPE_JSON)
@@ -46,28 +45,21 @@ class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, Speec
             )
         }
 
-        playMic.setOnTouchListener(this)
+        playMic.setOnClickListener(this)
 
     }
 
-
-    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-        when (event?.action) {
-            MotionEvent.ACTION_DOWN -> {
-
+    override fun onClick(p0: View?) {
+        when(isRecording) {
+            false -> {
                 Toast.makeText(this, "Gravando...", Toast.LENGTH_SHORT).show()
-
-                audio = MicAudioSource(8000).also {
-                    it.startRecording()
-                }
-
-                return false
+                audio = MicAudioSource(8000)
+                audio?.startRecording()
+                isRecording = true
             }
-            MotionEvent.ACTION_UP -> {
-
+            true -> {
                 Toast.makeText(this, "Enviando...", Toast.LENGTH_SHORT).show()
-
-                audio?.stop()
+                audio?.stopRecording()
 
                 progressMic.show()
                 playMic.isEnabled = false
@@ -79,15 +71,11 @@ class MicrophoneAudioActivity : AppCompatActivity(), View.OnTouchListener, Speec
                     .config(recognitionConfig, "builtin:slm/general")
                     .build()
 
-                audio?.let {
-                    speech.recognizer(it, TYPE_AUDIO_RAW)
-                }
+                audio?.let { speech.recognizer(it, TYPE_AUDIO_RAW) }
 
-
-                return false
+                isRecording = false
             }
         }
-        return false
     }
 
     override fun onResult(result: String) {

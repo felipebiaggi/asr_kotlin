@@ -7,6 +7,7 @@ import br.com.cpqd.asr.asr_kotlin.constant.CharsetConstants.Companion.NETWORK_CH
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_AUDIO_RAW
 import br.com.cpqd.asr.asr_kotlin.constant.ContentTypeConstants.Companion.TYPE_OCTET_STREAM
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_CREATE_SESSION
+import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_RELEASE_SESSION
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_SEND_AUDIO
 import br.com.cpqd.asr.asr_kotlin.constant.HeaderMethodConstants.Companion.METHOD_START_RECOGNITION
 import br.com.cpqd.asr.asr_kotlin.model.AsrMessage
@@ -131,7 +132,7 @@ class SpeechRecognizerImpl(private val builder: SpeechRecognizer.Builder) :
                     Gson().fromJson(it, RecognitionResult::class.java).getString()
                 )
             }
-            websocket?.disconnect()
+            websocket?.sendBinary(AsrMessage(METHOD_RELEASE_SESSION).toByteArray())
         }
 
     }

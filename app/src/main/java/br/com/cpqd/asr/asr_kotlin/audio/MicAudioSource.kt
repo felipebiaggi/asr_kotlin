@@ -16,6 +16,8 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
 
     private val RECORDER_AUDIO_SOURCE: Int = MediaRecorder.AudioSource.MIC
 
+    private var recorderSampleRate: Int = 8000
+
     private var recorder: AudioRecord? = null
 
     private var stopped: Boolean = false
@@ -23,7 +25,7 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
     private var started: Boolean = false
 
     init {
-        val recorderSampleRate: Int = when (sampleRate) {
+        recorderSampleRate = when (sampleRate) {
             8000 -> {
                 8000
             }
@@ -43,7 +45,6 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
             3145728
         )
     }
-
 
     override fun read(byte: ByteArray): Int {
         if (!stopped) return -1
@@ -70,7 +71,7 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
         }
     }
 
-    fun stop() {
+    fun stopRecording() {
         try {
             Log.d(TAG, "Gravação Terminada")
             recorder?.stop()
@@ -86,10 +87,11 @@ class MicAudioSource(sampleRate: Int) : AudioSource {
         stopped = true
         recorder?.stop()
         recorder?.release()
+
     }
 
     override fun finish() {
-        stop()
+        stopRecording()
     }
 
 }
